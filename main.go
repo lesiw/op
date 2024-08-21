@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -81,6 +82,9 @@ func run() error {
 
 	opsbin := filepath.Join(bindir, "ops-"+base64.URLEncoding.
 		WithPadding(base64.NoPadding).EncodeToString(dirid[:]))
+	if runtime.GOOS == "windows" {
+		opsbin += ".exe"
+	}
 	stat, err := os.Stat(opsbin)
 	if os.IsNotExist(err) || stat.ModTime().Before(mtime) {
 		if err := buildBin(opsbin); err != nil {
