@@ -145,7 +145,7 @@ func toRootDir() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		for _, dir := range []string{".git", "ops"} {
+		for _, dir := range []string{".git", ".ops", "ops"} {
 			fileinfo, err := os.Stat(dir)
 			if err == nil && fileinfo.IsDir() {
 				return cwd, nil
@@ -159,14 +159,17 @@ func toRootDir() (string, error) {
 }
 
 func toOpsDir(root string) error {
-	if stat, err := os.Stat("ops"); os.IsNotExist(err) || !stat.IsDir() {
-		return fmt.Errorf("no 'ops' directory found: %w", err)
+	for _, dir := range []string{".ops", "ops"} {
+		if stat, err := os.Stat(dir); os.IsNotExist(err) || !stat.IsDir() {
+			continue
+		}
+		opsdir := filepath.Join(root, dir)
+		if err := os.Chdir(opsdir); err != nil {
+			continue
+		}
+		return nil
 	}
-	opsdir := filepath.Join(root, "ops")
-	if err := os.Chdir(opsdir); err != nil {
-		return fmt.Errorf("failed to chdir to '%s': %w", opsdir, err)
-	}
-	return nil
+	return errors.New("no ops directory found")
 }
 
 func newestMtime(dir string) (mtime time.Time, err error) {
