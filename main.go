@@ -25,6 +25,7 @@ var (
 	_        = flags.Bool("l", "list ops")
 	install  = flags.Bool("install-completions", "install completion scripts")
 	printver = flags.Bool("V,version", "print version")
+	runner   = sys.Runner()
 
 	//go:embed version.txt
 	versionfile string
@@ -96,7 +97,7 @@ func run() error {
 		return fmt.Errorf("failed to chdir to '%s': %w", workdir, err)
 	}
 
-	err = sys.Run(append([]string{opsbin}, os.Args[1:]...)...)
+	err = runner.Run(append([]string{opsbin}, os.Args[1:]...)...)
 	if err != nil {
 		return errors.New("")
 	}
@@ -193,10 +194,10 @@ func newestMtime(dir string) (mtime time.Time, err error) {
 }
 
 func buildBin(path string) error {
-	if err := sys.Run("go", "mod", "tidy"); err != nil {
+	if err := runner.Run("go", "mod", "tidy"); err != nil {
 		return fmt.Errorf("'go mod tidy' failed: %w", err)
 	}
-	if err := sys.Run("go", "build", "-o", path, "."); err != nil {
+	if err := runner.Run("go", "build", "-o", path, "."); err != nil {
 		return fmt.Errorf("'go build' failed: %w", err)
 	}
 	return nil
