@@ -3,7 +3,7 @@ module ops.localhost
 go 1.22.5
 
 require (
-	labs.lesiw.io/ops v0.0.0-20241006135512-94637b005d39
+	labs.lesiw.io/ops v0.0.0-20241006210713-037db82d67a8
 	lesiw.io/ops v0.12.0
 )
 
