@@ -29,12 +29,8 @@ var (
 
 	//go:embed version.txt
 	versionfile string
-	version     string
+	version     = strings.TrimRight(versionfile, "\n")
 )
-
-func init() {
-	version = strings.TrimRight(versionfile, "\n")
-}
 
 func main() {
 	cmdio.Trace = io.Discard
@@ -58,11 +54,11 @@ func run() error {
 		return installComp()
 	}
 
-	workdir, err := toRootDir()
+	workdir, opsdir, err := getDirs()
 	if err != nil {
 		return err
 	}
-	if err := toOpsDir(workdir); err != nil {
+	if err := os.Chdir(opsdir); err != nil {
 		return err
 	}
 
@@ -140,37 +136,62 @@ func cacheDir(path ...string) (cache string, err error) {
 	return
 }
 
-func toRootDir() (string, error) {
+func getDirs() (work string, ops string, err error) {
+	if work, ops, err = getDirsFromOverlay(); err == nil {
+		return
+	}
 	for {
 		cwd, err := os.Getwd()
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		for _, dir := range []string{".git", ".ops", "ops"} {
+		for _, dir := range []string{".ops", "ops"} {
 			fileinfo, err := os.Stat(dir)
 			if err == nil && fileinfo.IsDir() {
-				return cwd, nil
+				return cwd, filepath.Join(cwd, dir), nil
 			}
 		}
 		reachedRoot := (cwd == "/" || cwd == (filepath.VolumeName(cwd)+"\\"))
 		if reachedRoot || os.Chdir("..") != nil {
-			return "", fmt.Errorf("No .git or ops directory was found.")
+			return "", "", fmt.Errorf("No .ops directory was found.")
 		}
 	}
 }
 
-func toOpsDir(root string) error {
-	for _, dir := range []string{".ops", "ops"} {
-		if stat, err := os.Stat(dir); os.IsNotExist(err) || !stat.IsDir() {
+func getDirsFromOverlay() (work string, ops string, err error) {
+	for _, layer := range strings.Split(os.Getenv("OPOVERLAY"), "::") {
+		top, btm, ok := strings.Cut(layer, ":")
+		if !ok {
 			continue
 		}
-		opsdir := filepath.Join(root, dir)
-		if err := os.Chdir(opsdir); err != nil {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", "", err
+		}
+		if !subdir(btm, cwd) {
 			continue
 		}
-		return nil
+		rel, err := filepath.Rel(btm, cwd)
+		if err != nil {
+			continue
+		}
+		if err := os.Chdir(btm); err != nil {
+			continue
+		}
+		cwd = btm
+		twd := top
+		for _, dir := range dirs(rel) {
+			if newdir := filepath.Join(twd, dir); isdir(newdir) {
+				if err := os.Chdir(dir); err != nil {
+					break
+				}
+				cwd = filepath.Join(cwd, dir)
+				twd = newdir
+			}
+		}
+		return cwd, twd, nil
 	}
-	return errors.New("no ops directory found")
+	return "", "", errors.New("no overlay directory found")
 }
 
 func newestMtime(dir string) (mtime time.Time, err error) {
@@ -201,4 +222,37 @@ func buildBin(path string) error {
 		return fmt.Errorf("'go build' failed: %w", err)
 	}
 	return nil
+}
+
+func subdir(parent, sub string) bool {
+	parentpath, err := filepath.Abs(parent)
+	if err != nil {
+		return false
+	}
+
+	subpath, err := filepath.Abs(sub)
+	if err != nil {
+		return false
+	}
+
+	parentpath = filepath.Clean(parentpath) + string(filepath.Separator)
+	subpath = filepath.Clean(subpath) + string(filepath.Separator)
+
+	return strings.HasPrefix(subpath, parentpath)
+}
+
+func dirs(path string) []string {
+	dir, last := filepath.Split(path)
+	if dir == "" {
+		return []string{last}
+	}
+	return append(dirs(filepath.Clean(dir)), last)
+}
+
+func isdir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
