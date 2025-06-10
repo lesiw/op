@@ -153,7 +153,7 @@ func getDirs() (work string, ops string, err error) {
 		}
 		reachedRoot := (cwd == "/" || cwd == (filepath.VolumeName(cwd)+"\\"))
 		if reachedRoot || os.Chdir("..") != nil {
-			return "", "", fmt.Errorf("No .ops directory was found.")
+			return "", "", fmt.Errorf("no .ops directory was found")
 		}
 	}
 }

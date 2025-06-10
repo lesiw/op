@@ -21,7 +21,7 @@ var zshcomp []byte
 
 func installComp() error {
 	if os.Geteuid() != 0 {
-		return errors.New("--install-completions must be run as root.")
+		return errors.New("--install-completions must be run as root")
 	}
 	for _, fn := range []func() error{installBashComp, installZshComp} {
 		if err := fn(); err != nil {
@@ -47,7 +47,7 @@ func installBashComp() error {
 	}
 	changed, err := installFile(bashcomp, path)
 	if err != nil {
-		return fmt.Errorf("Error installing bash completion script: %v\n", err)
+		return fmt.Errorf("error installing bash completion script: %v", err)
 	}
 	if changed {
 		fmt.Println("Bash completion script updated.")
@@ -59,7 +59,7 @@ func installZshComp() error {
 	changed, err := installFile(zshcomp,
 		"/usr/local/share/zsh/site-functions/_op")
 	if err != nil {
-		return fmt.Errorf("Error installing zsh completion script: %v\n", err)
+		return fmt.Errorf("error installing zsh completion script: %v", err)
 	}
 	if changed {
 		fmt.Println("Zsh completion script updated.")
