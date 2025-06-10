@@ -218,7 +218,8 @@ func buildBin(path string) error {
 	if err := runner.Run("go", "mod", "tidy"); err != nil {
 		return fmt.Errorf("'go mod tidy' failed: %w", err)
 	}
-	if err := runner.Run("go", "build", "-o", path, "."); err != nil {
+	err := runner.Run("go", "build", "-buildvcs=false", "-o", path, ".")
+	if err != nil {
 		return fmt.Errorf("'go build' failed: %w", err)
 	}
 	return nil
