@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"lesiw.io/cmdio"
 	"lesiw.io/cmdio/sys"
 	"lesiw.io/defers"
@@ -136,7 +137,7 @@ func cacheDir(path ...string) (cache string, err error) {
 	return
 }
 
-func getDirs() (work string, ops string, err error) {
+func getDirs() (work, ops string, err error) {
 	if work, ops, err = getDirsFromOverlay(); err == nil {
 		return
 	}
@@ -158,8 +159,8 @@ func getDirs() (work string, ops string, err error) {
 	}
 }
 
-func getDirsFromOverlay() (work string, ops string, err error) {
-	for _, layer := range strings.Split(os.Getenv("OPOVERLAY"), "::") {
+func getDirsFromOverlay() (work, ops string, err error) {
+	for layer := range strings.SplitSeq(os.Getenv("OPOVERLAY"), "::") {
 		top, btm, ok := strings.Cut(layer, ":")
 		if !ok {
 			continue
